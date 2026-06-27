@@ -71,9 +71,19 @@ class _RecapScreenState extends State<RecapScreen> {
   Widget _chip(IconData i, String t) => Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(20)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(i, color: Colors.white, size: 16), const SizedBox(width: 6), Text(t, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))]));
   Widget _statCard(String t, String v, IconData i, Color c) => Expanded(child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: c.withOpacity(0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: c.withOpacity(0.3))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(i, color: c), const SizedBox(height: 8), Text(v, style: TextStyle(color: c, fontWeight: FontWeight.bold, fontSize: 16)), Text(t, style: const TextStyle(color: Colors.grey, fontSize: 12))])));
 
-  void _showSettings() => showModalBottomSheet(context: context, builder: (context) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    void _showSettings() => showModalBottomSheet(context: context, builder: (context) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
     const Padding(padding: EdgeInsets.all(16), child: Text("Recap Settings", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
-    ToggleButtons(selected: [_period == RecapPeriod.weekly, _period == RecapPeriod.monthly, _period == RecapPeriod.yearly], isSelected: [_period == RecapPeriod.weekly, _period == RecapPeriod.monthly, _period == RecapPeriod.yearly], onPressed: (i) { setState(() => _period = RecapPeriod.values[i]); Navigator.pop(context); _load(); }, children: const [Padding(padding: EdgeInsets.all(12), child: Text('Weekly')), Padding(padding: EdgeInsets.all(12), child: Text('Monthly')), Padding(padding: EdgeInsets.all(12), child: Text('Yearly'))]),
+    Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          ChoiceChip(label: const Text('Weekly'), selected: _period == RecapPeriod.weekly, onSelected: (_) { setState(() => _period = RecapPeriod.weekly); Navigator.pop(context); _load(); }),
+          ChoiceChip(label: const Text('Monthly'), selected: _period == RecapPeriod.monthly, onSelected: (_) { setState(() => _period = RecapPeriod.monthly); Navigator.pop(context); _load(); }),
+          ChoiceChip(label: const Text('Yearly'), selected: _period == RecapPeriod.yearly, onSelected: (_) { setState(() => _period = RecapPeriod.yearly); Navigator.pop(context); _load(); }),
+        ],
+      ),
+    ),
     const SizedBox(height: 16),
     ListTile(leading: const Icon(Icons.delete_forever, color: Colors.red), title: const Text("Clear Recap Data", style: TextStyle(color: Colors.red)), onTap: () { ListeningTracker().clearData(); Navigator.pop(context); _load(); })
   ])));
