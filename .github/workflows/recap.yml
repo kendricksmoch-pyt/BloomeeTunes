@@ -35,16 +35,15 @@ jobs:
         $i = 0
         while ($i -lt $lines.Count) {
             if ($lines[$i] -match '^\s*(integration_test|flutter_test):\s*$') {
-                $i += 2 # Skip test lines and their sdk: flutter child
+                $i += 2
+            } elseif ($lines[$i] -match '^\s*freezed:') {
+                $i += 1
             } else {
                 $newLines.Add($lines[$i])
                 $i++
             }
         }
-        $content = $newLines -join "`r`n"
-        # Downgrade freezed so it doesn't demand Dart 3.8.0
-        $content = $content -replace 'freezed: \^3\.2\.0', 'freezed: ^3.1.0'
-        Set-Content $file -Value $content
+        $newLines | Set-Content $file
         
     - name: Get Flutter dependencies
       run: flutter pub get
