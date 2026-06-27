@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import 'recap_analytics.dart';
 
 class ListeningTracker {
-  static const String _key = 'bloomee_recap_events';
   static final ListeningTracker _instance = ListeningTracker._internal();
   factory ListeningTracker() => _instance;
   ListeningTracker._internal();
@@ -17,10 +17,37 @@ class ListeningTracker {
   List<String> _curGenres = [];
 
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    _events = (prefs.getStringList(_key) ?? []).map((e) => ListeningEvent.fromJson(jsonDecode(e))).toList();
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _save());
+    await _loadData();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _saveData());
     debugPrint('[Recap] Loaded ${_events.length} events');
+  }
+
+  Future<String> get _filePath async {
+    final dir = await getApplicationDocumentsDirectory();
+    return '${dir.path}/bloomee_recap_events.json';
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final file = File(await _filePath);
+      if (await file.exists()) {
+        final contents = await file.readAsString();
+        _events = (jsonDecode(contents) as List).map((e) => ListeningEvent.fromJson(e)).toList();
+      }
+    } catch (e) {
+      debugPrint('[Recap] Error loading data: $e');
+      _events = [];
+    }
+  }
+
+  Future<void> _saveData() async {
+    try {
+      final file = File(await _filePath);
+      final save = _events.length > 15000 ? _events.sublist(_events.length - 15000) : _events;
+      await file.writeAsString(jsonEncode(save.map((e) => e.toJson()).toList()));
+    } catch (e) {
+      debugPrint('[Recap] Error saving data: $e');
+    }
   }
 
   void onTrackStarted({required String trackId, required String trackName, required String artistName, required String albumName, String? artworkUrl, List<String>? genres, String? source, String? provider}) {
@@ -37,7 +64,7 @@ class ListeningTracker {
   void _finishTrack() {
     if (_curId == null) return;
     int total = _accMs + (_curStart != null ? DateTime.now().difference(_curStart!).inMilliseconds : 0);
-    if (total >= 10000) { // Min 10 seconds to count
+    if (total >= 10000) {
       _events.add(ListeningEvent(trackId: _curId!, trackName: _curName!, artistName: _curArtist!, albumName: _curAlbum!, artworkUrl: _curArt, genres: _curGenres, durationMs: total, timestamp: DateTime.now(), source: _curSrc, provider: _curProv));
     }
     _accMs = 0;
@@ -50,12 +77,6 @@ class ListeningTracker {
     return l;
   }
 
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    final save = _events.length > 15000 ? _events.sublist(_events.length - 15000) : _events;
-    await prefs.setStringList(_key, save.map((e) => jsonEncode(e.toJson())).toList());
-  }
-
-  Future<void> clearData() async { _events = []; final p = await SharedPreferences.getInstance(); await p.remove(_key); }
-  void dispose() { _timer?.cancel(); _finishTrack(); _save(); }
+  Future<void> clearData() async { _events = []; final file = File(await _filePath); if (await file.exists()) await file.delete(); }
+  void dispose() { _timer?.cancel(); _finishTrack(); _saveData(); }
 }
