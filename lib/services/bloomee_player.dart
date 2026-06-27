@@ -27,6 +27,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:async/async.dart';
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:Bloomee/services/listening_tracker.dart';
 
 /// BloomeeTunes main audio player.
 ///
@@ -398,6 +399,36 @@ class BloomeeMusicPlayer extends BaseAudioHandler
     _relatedSongTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (!_isDisposed && engine.playing) _checkRelatedSongs();
     });
+
+        // ─── Listening Tracker Hooks ───────────────────────────────────────────────
+    
+    // 1. Track when a new song is loaded
+    mediaItem.listen((item) {
+      if (item != null) {
+        ListeningTracker().onTrackStarted(
+          trackId: item.id,
+          trackName: item.title,
+          artistName: item.artist ?? 'Unknown',
+          albumName: item.album ?? '',
+          artworkUrl: item.artUri?.toString(),
+          source: 'Bloomee',
+        );
+      } else {
+        ListeningTracker().onTrackEnded();
+      }
+    });
+
+    // 2. Track Play, Pause, and Completion states
+    playbackState.listen((state) {
+      if (state.playing) {
+        ListeningTracker().onResumed();
+      } else if (state.processingState == AudioProcessingState.completed) {
+        ListeningTracker().onTrackEnded();
+      } else {
+        // It's paused but not finished
+        ListeningTracker().onPaused();
+      }
+    });  
   }
 
   // ─── Playback State Broadcast ─────────────────────────────────────────────
