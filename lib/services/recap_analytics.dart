@@ -259,7 +259,3 @@ class _D {
   int ms = 0; 
   _D(this.d); 
 }
-
-extension _Cap on String { 
-  String get capitalize => isEmpty ? '' : '${this[0].toUpperCase()}${substring(1)}'; 
-}
