@@ -276,7 +276,7 @@ class ListeningAnalytics {
     int max = 1;
     int c = 1;
     for (int i = 1; i < days.length; i++) {
-      if (days[i].difference(days[i - 1].inDays == 1) {
+      if (days[i].difference(days[i - 1]).inDays == 1) {
         c++;
         if (c > max) max = c;
       } else {
@@ -290,7 +290,7 @@ class ListeningAnalytics {
     final m = <String, _D>{};
     for (var e in ev) {
       final k = '${e.timestamp.year}-${e.timestamp.month}-${e.timestamp.day}';
-      m.putIfAbsent(k, () => _D(DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day));
+      m.putIfAbsent(k, () => _D(DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day)));
       m[k]!.c++;
       m[k]!.ms += e.durationMs;
     }
