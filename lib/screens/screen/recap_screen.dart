@@ -374,14 +374,14 @@ class _StoryView extends StatelessWidget {
         colors: const [Colors.purple, Colors.deepPurple],
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Text("🎵", style: TextStyle(fontSize: 60)),
-            SizedBox(height: 16),
+          children: [
+            const Text("🎵", style: TextStyle(fontSize: 60)),
+            const SizedBox(height: 16),
             Text(
               "${recap.periodLabel} Recap",
-              style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
             ),
-            Text(recap.dateRange, style: TextStyle(color: Colors.white70)),
+            Text(recap.dateRange, style: const TextStyle(color: Colors.white70)),
           ],
         ),
       ),
@@ -472,9 +472,11 @@ class _StoryView extends StatelessWidget {
         ),
       ),
     ];
+    
+    // Fixed: Changed PageView.builder to PageView
     return Scaffold(
       backgroundColor: Colors.black,
-      body: PageView.builder(
+      body: PageView(
         scrollDirection: Axis.vertical,
         children: slides,
       ),
