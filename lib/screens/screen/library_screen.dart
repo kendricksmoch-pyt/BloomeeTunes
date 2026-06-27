@@ -25,6 +25,7 @@ import 'package:icons_plus/icons_plus.dart';
 import 'package:Bloomee/blocs/library/search_cubit/library_search_cubit.dart';
 import 'package:Bloomee/core/models/library_search_result.dart';
 import 'package:Bloomee/screens/widgets/animated_list_item.dart';
+import 'package:Bloomee/screens/screen/recap_screen.dart';
 
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
@@ -125,6 +126,7 @@ class _LibraryScreenViewState extends State<_LibraryScreenView> {
                 physics: const BouncingScrollPhysics(),
                 slivers: [
                   customDiscoverBar(context),
+                  _buildRecapButton(context),
                   SliverFillRemaining(
                     child: Center(
                       child: SignBoardWidget(
@@ -157,6 +159,7 @@ class _LibraryScreenViewState extends State<_LibraryScreenView> {
                   physics: const BouncingScrollPhysics(),
                   slivers: [
                     customDiscoverBar(context),
+                    _buildRecapButton(context),
                     if (_isSearching)
                       SliverToBoxAdapter(
                         child: _buildSearchBar(),
@@ -277,6 +280,85 @@ class _LibraryScreenViewState extends State<_LibraryScreenView> {
               },
             );
           },
+        ),
+      ),
+    );
+  }
+
+    /// Builds the Listening Recap button that matches the app's theme
+  SliverToBoxAdapter _buildRecapButton(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Default_Theme.accentColor2.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Default_Theme.accentColor2.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const RecapScreen()),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.insights_outlined,
+                      color: Default_Theme.accentColor2,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Listening Recap",
+                            style: Default_Theme.primaryTextStyle.merge(
+                              TextStyle(
+                                fontSize: 16,
+                                color: Default_Theme.primaryColor1,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "View your weekly, monthly, and yearly stats",
+                            style: Default_Theme.secondoryTextStyle.merge(
+                              TextStyle(
+                                fontSize: 12,
+                                color: Default_Theme.primaryColor1
+                                    .withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: Default_Theme.primaryColor1
+                          .withValues(alpha: 0.5),
+                      size: 24,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
