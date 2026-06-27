@@ -1,5 +1,3 @@
-import 'package:collection/collection.dart';
-
 enum RecapPeriod { weekly, monthly, yearly }
 
 class ListeningEvent {
