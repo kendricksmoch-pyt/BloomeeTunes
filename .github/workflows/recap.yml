@@ -25,8 +25,14 @@ jobs:
     - name: Build Windows App
       run: flutter build windows --release
       
-    - name: Upload Bloomee EXE
+    - name: Zip Release Folder
+      # This zips the ENTIRE Release folder (including the missing DLLs and data folder)
+      run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath bloomee_custom.zip
+      shell: pwsh
+
+    - name: Upload Bloomee ZIP
       uses: actions/upload-artifact@v4
       with:
         name: BloomeeCustomBuild
-        path: build\windows\x64\runner\Release\bloomee.exe
+        # We now upload the .zip file instead of just the .exe
+        path: bloomee_custom.zip
