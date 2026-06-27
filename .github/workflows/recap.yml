@@ -26,6 +26,13 @@ jobs:
       with:
         flutter-version: '3.24.5'
         
+    - name: Remove test dependencies
+      shell: pwsh
+      run: |
+        $content = Get-Content pubspec.yaml
+        $content = $content | Where-Object { $_ -notmatch 'integration_test' }
+        Set-Content pubspec.yaml -Value $content
+        
     - name: Get Flutter dependencies
       run: flutter pub get
       
