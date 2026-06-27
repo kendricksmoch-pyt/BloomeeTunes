@@ -1,4 +1,4 @@
-name: Build Windows EXE
+name: Build Custom Bloomee EXE
 
 on:
   push:
@@ -10,49 +10,23 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout Repository
       uses: actions/checkout@v4
-      
-    - name: Install Rust stable
-      uses: dtolnay/rust-toolchain@stable
-      
-    - name: Rust cache
-      uses: Swatinem/rust-cache@v2
-      with:
-        workspaces: "./rust -> target"
-    
+
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.27.4'
-        
-    - name: Patch pubspec for Dart 3.6.2
-      shell: pwsh
-      run: |
-        $file = 'pubspec.yaml'
-        $lines = Get-Content $file
-        $newLines = [System.Collections.Generic.List[string]]::new()
-        $i = 0
-        while ($i -lt $lines.Count) {
-            if ($lines[$i] -match '^\s*(integration_test|flutter_test):\s*$') {
-                $i += 2
-            } elseif ($lines[$i] -match '^\s*freezed:') {
-                $i += 1
-            } else {
-                $newLines.Add($lines[$i])
-                $i++
-            }
-        }
-        $newLines | Set-Content $file
-        
-    - name: Get Flutter dependencies
+        flutter-version: '3.35.4'
+        channel: 'stable'
+
+    - name: Install Dependencies
       run: flutter pub get
       
-    - name: Build Windows
+    - name: Build Windows App
       run: flutter build windows --release
       
-    - name: Upload BloomeeTunes EXE
+    - name: Upload Bloomee EXE
       uses: actions/upload-artifact@v4
       with:
-        name: BloomeeWindowsBuild
-        path: build\windows\x64\runner\Release\BloomeeTunes.exe
+        name: BloomeeCustomBuild
+        path: build\windows\x64\runner\Release\bloomee.exe
