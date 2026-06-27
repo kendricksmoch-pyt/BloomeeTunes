@@ -1,25 +1,38 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'recap_analytics.dart';
 
-class ListeningTracker {
+class ListeningTracker with WidgetsBindingObserver {
   static final ListeningTracker _instance = ListeningTracker._internal();
   factory ListeningTracker() => _instance;
   ListeningTracker._internal();
 
   List<ListeningEvent> _events = [];
-  Timer? _timer;
-  String? _curId; DateTime? _curStart; int _accMs = 0;
+  String? _curId; 
+  DateTime? _curStart; 
+  int _accMs = 0;
   String? _curName, _curArtist, _curAlbum, _curArt, _curSrc, _curProv;
   List<String> _curGenres = [];
 
   Future<void> init() async {
     await _loadData();
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _saveData());
-    debugPrint('[Recap] Loaded ${_events.length} events');
+    // Listen to app lifecycle to force-save when the app is closed/minimized
+    WidgetsBinding.instance.addObserver(this);
+    debugPrint('[Recap] Tracker initialized. Loaded ${_events.length} events');
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // If app is closed, minimized, or goes to background, save instantly
+    if (state == AppLifecycleState.paused || 
+        state == AppLifecycleState.inactive || 
+        state == AppLifecycleState.detached) {
+      _finishTrack();
+      _saveData();
+    }
   }
 
   Future<String> get _filePath async {
@@ -43,6 +56,7 @@ class ListeningTracker {
   Future<void> _saveData() async {
     try {
       final file = File(await _filePath);
+      // Keep the file from growing infinitely (max 15,000 events)
       final save = _events.length > 15000 ? _events.sublist(_events.length - 15000) : _events;
       await file.writeAsString(jsonEncode(save.map((e) => e.toJson()).toList()));
     } catch (e) {
@@ -50,24 +64,71 @@ class ListeningTracker {
     }
   }
 
-  void onTrackStarted({required String trackId, required String trackName, required String artistName, required String albumName, String? artworkUrl, List<String>? genres, String? source, String? provider}) {
+  void onTrackStarted({
+    required String trackId, 
+    required String trackName, 
+    required String artistName, 
+    required String albumName, 
+    String? artworkUrl, 
+    List<String>? genres, 
+    String? source, 
+    String? provider
+  }) {
+    // Finish the previous track and save it instantly
     _finishTrack();
-    _curId = trackId; _curName = trackName; _curArtist = artistName; _curAlbum = albumName;
-    _curArt = artworkUrl; _curGenres = genres ?? []; _curSrc = source; _curProv = provider;
-    _curStart = DateTime.now(); _accMs = 0;
+    _saveData();
+
+    _curId = trackId; 
+    _curName = trackName; 
+    _curArtist = artistName; 
+    _curAlbum = albumName;
+    _curArt = artworkUrl; 
+    _curGenres = genres ?? []; 
+    _curSrc = source; 
+    _curProv = provider;
+    _curStart = DateTime.now(); 
+    _accMs = 0;
   }
 
-  void onPaused() { if (_curStart != null) { _accMs += DateTime.now().difference(_curStart!).inMilliseconds; _curStart = DateTime.now(); } }
-  void onResumed() { _curStart = DateTime.now(); }
-  void onTrackEnded() { _finishTrack(); _curId = null; }
+  void onPaused() {
+    if (_curStart != null) {
+      _accMs += DateTime.now().difference(_curStart!).inMilliseconds;
+      _curStart = null; // Stop counting until resumed
+      _saveData(); // Save instantly on pause
+    }
+  }
+
+  void onResumed() {
+    _curStart = DateTime.now(); // Resume counting
+  }
+
+  void onTrackEnded() {
+    _finishTrack();
+    _curId = null;
+    _saveData(); // Save instantly when song ends or is skipped
+  }
 
   void _finishTrack() {
     if (_curId == null) return;
     int total = _accMs + (_curStart != null ? DateTime.now().difference(_curStart!).inMilliseconds : 0);
+    
+    // Only record if listened for 10 seconds or more
     if (total >= 10000) {
-      _events.add(ListeningEvent(trackId: _curId!, trackName: _curName!, artistName: _curArtist!, albumName: _curAlbum!, artworkUrl: _curArt, genres: _curGenres, durationMs: total, timestamp: DateTime.now(), source: _curSrc, provider: _curProv));
+      _events.add(ListeningEvent(
+        trackId: _curId!, 
+        trackName: _curName!, 
+        artistName: _curArtist!, 
+        albumName: _curAlbum!, 
+        artworkUrl: _curArt, 
+        genres: _curGenres, 
+        durationMs: total, 
+        timestamp: DateTime.now(), 
+        source: _curSrc, 
+        provider: _curProv
+      ));
     }
     _accMs = 0;
+    _curStart = null;
   }
 
   List<ListeningEvent> getEvents({DateTime? from, DateTime? until}) {
@@ -77,6 +138,16 @@ class ListeningTracker {
     return l;
   }
 
-  Future<void> clearData() async { _events = []; final file = File(await _filePath); if (await file.exists()) await file.delete(); }
-  void dispose() { _timer?.cancel(); _finishTrack(); _saveData(); }
+  Future<void> clearData() async {
+    _events = [];
+    _curId = null;
+    final file = File(await _filePath);
+    if (await file.exists()) await file.delete();
+  }
+
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _finishTrack();
+    _saveData();
+  }
 }
