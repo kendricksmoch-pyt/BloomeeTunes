@@ -34,8 +34,8 @@ jobs:
         $newLines = [System.Collections.Generic.List[string]]::new()
         $i = 0
         while ($i -lt $lines.Count) {
-            if ($lines[$i] -match '^\s*integration_test:\s*$') {
-                $i += 2
+            if ($lines[$i] -match '^\s*(integration_test|flutter_test):\s*$') {
+                $i += 2 # Skip the test line AND the 'sdk: flutter' line under it
             } else {
                 $newLines.Add($lines[$i])
                 $i++
