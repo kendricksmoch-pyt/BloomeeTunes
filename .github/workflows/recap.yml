@@ -44,7 +44,7 @@ jobs:
         $newLines | Set-Content $file
         
     - name: Get Flutter dependencies
-      run: flutter pub get
+      run: flutter pub get --legacy-resolver
       
     - name: Build Windows
       run: flutter build windows --release
