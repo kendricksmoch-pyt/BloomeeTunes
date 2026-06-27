@@ -29,9 +29,19 @@ jobs:
     - name: Remove test dependencies
       shell: pwsh
       run: |
-        $content = Get-Content pubspec.yaml
-        $content = $content | Where-Object { $_ -notmatch 'integration_test' }
-        Set-Content pubspec.yaml -Value $content
+        $file = 'pubspec.yaml'
+        $lines = Get-Content $file
+        $newLines = [System.Collections.Generic.List[string]]::new()
+        $i = 0
+        while ($i -lt $lines.Count) {
+            if ($lines[$i] -match '^\s*integration_test:\s*$') {
+                $i += 2
+            } else {
+                $newLines.Add($lines[$i])
+                $i++
+            }
+        }
+        $newLines | Set-Content $file
         
     - name: Get Flutter dependencies
       run: flutter pub get
