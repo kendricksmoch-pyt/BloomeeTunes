@@ -26,7 +26,7 @@ jobs:
       with:
         flutter-version: '3.27.4'
         
-    - name: Remove test dependencies
+    - name: Patch pubspec for Dart 3.6.2
       shell: pwsh
       run: |
         $file = 'pubspec.yaml'
@@ -35,16 +35,19 @@ jobs:
         $i = 0
         while ($i -lt $lines.Count) {
             if ($lines[$i] -match '^\s*(integration_test|flutter_test):\s*$') {
-                $i += 2
+                $i += 2 # Skip test lines and their sdk: flutter child
             } else {
                 $newLines.Add($lines[$i])
                 $i++
             }
         }
-        $newLines | Set-Content $file
+        $content = $newLines -join "`r`n"
+        # Downgrade freezed so it doesn't demand Dart 3.8.0
+        $content = $content -replace 'freezed: \^3\.2\.0', 'freezed: ^3.1.0'
+        Set-Content $file -Value $content
         
     - name: Get Flutter dependencies
-      run: flutter pub get --legacy-resolver
+      run: flutter pub get
       
     - name: Build Windows
       run: flutter build windows --release
