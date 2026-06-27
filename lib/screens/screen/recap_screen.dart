@@ -58,8 +58,42 @@ class _RecapScreenState extends State<RecapScreen> {
     if (_recap!.changePercent != null) ...[const SizedBox(height: 12), _statCard("vs Last Period", "${_recap!.changePercent! > 0 ? '+' : ''}${_recap!.changePercent!.toStringAsFixed(0)}%", _recap!.changePercent! > 0 ? Icons.trending_up : Icons.trending_down, _recap!.changePercent! > 0 ? Colors.green : Colors.red)],
     const SizedBox(height: 24), _sectionTitle("Top Tracks"),
     ..._recap!.topTracks.take(5).map((t) => ListTile(leading: Text('#${_recap!.topTracks.indexOf(t)+1}', style: TextStyle(color: _recap!.topTracks.indexOf(t) < 3 ? theme.colorScheme.primary : Colors.grey, fontWeight: FontWeight.bold)), title: Text(t.name, maxLines: 1, overflow: TextOverflow.ellipsis), subtitle: Text('${t.playCount} plays • ${t.percentage?.toStringAsFixed(1)}%'), trailing: const Icon(Icons.play_arrow, color: Colors.grey))),
-    const SizedBox(height: 24), _sectionTitle("Top Artists"),
-    SizedBox(height: 120, child: ListView.builder(scrollDirection: Axis.horizontal, itemCount: _recap!.topArtists.length.clamp(0, 8), itemBuilder: (context, i) { final a = _recap!.topArtists[i]; return Padding(padding: const EdgeInsets.only(right: 16), child: Column(children: [CircleAvatar(radius: 35, backgroundColor: Colors.grey[800], backgroundImage: a.imageUrl != null ? NetworkImage(a.imageUrl!) : null, child: a.imageUrl == null ? const Icon(Icons.person) : null), const SizedBox(height: 8), SizedBox(width: 80, child: Text(a.name, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)))])); })),
+        const SizedBox(height: 24), 
+    _sectionTitle("Top Artists"),
+    SizedBox(
+      height: 120,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _recap!.topArtists.length.clamp(0, 8),
+        itemBuilder: (context, i) {
+          final a = _recap!.topArtists[i];
+          return Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 35,
+                  backgroundColor: Colors.grey[800],
+                  backgroundImage: a.imageUrl != null ? NetworkImage(a.imageUrl!) : null,
+                  child: a.imageUrl == null ? const Icon(Icons.person) : null,
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    a.name,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ),
     const SizedBox(height: 24), _sectionTitle("Top Genres"),
     Wrap(spacing: 8, runSpacing: 8, children: _recap!.topGenres.map((g) => Chip(backgroundColor: Color(g.color).withOpacity(0.2), label: Text('${g.name} (${g.percentage.toStringAsFixed(0)}%)', style: TextStyle(color: Color(g.color))), side: BorderSide.none)).toList()),
     const SizedBox(height: 24), _sectionTitle("Activity Heatmap"), _Heatmap(daily: _recap!.dailyActivity, color: theme.colorScheme.primary),
