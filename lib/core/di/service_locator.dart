@@ -19,6 +19,9 @@ import 'package:Bloomee/services/plugin/plugin_storage_service.dart';
 import 'package:Bloomee/plugins/services/plugin_repository_service.dart';
 import 'package:Bloomee/services/db/dao/settings_dao.dart';
 
+// 1. ADD THIS IMPORT FOR YOUR LISTENING TRACKER
+import 'package:Bloomee/services/listening_tracker.dart';
+
 /// Service locator — static singleton registry.
 ///
 /// Usage:
@@ -77,6 +80,9 @@ class ServiceLocator {
 
     // 4. Plugin service (main interface — initialize later with pluginsDir).
     pluginService = PluginService();
+
+    // 2. ADD THIS LINE TO LOAD SAVED LISTENING DATA ON STARTUP
+    await ListeningTracker().init();
   }
 
   /// Initialize the plugin system.
@@ -103,5 +109,8 @@ class ServiceLocator {
     pluginStorageService.dispose();
     pluginEventBus.dispose();
     await pluginService.dispose();
+    
+    // 3. ADD THIS LINE TO SAVE DATA WHEN APP CLOSES
+    ListeningTracker().dispose(); 
   }
 }
