@@ -65,6 +65,8 @@ import 'package:Bloomee/services/onboarding_service.dart';
 import 'package:Bloomee/services/plugin_bootstrap_service.dart';
 import 'package:Bloomee/plugins/services/plugin_repository_service.dart';
 import 'package:Bloomee/services/shared_url_resolver_service.dart';
+import 'package:Bloomee/services/listening_tracker.dart';
+import 'package:Bloomee/screens/screen/recap_screen.dart';
 
 void processIncomingIntent(SharedMedia sharedMedia) {
   if (sharedMedia.content != null && isUrl(sharedMedia.content!)) {
@@ -151,6 +153,7 @@ Future<void> setupPlayerCubit() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ListeningTracker().init();
   GestureBinding.instance.resamplingEnabled = true;
   MediaKit.ensureInitialized();
   await bootstrapApp();
