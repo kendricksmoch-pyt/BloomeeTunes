@@ -1,3 +1,5 @@
+import 'dart:ui';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../services/recap_analytics.dart';
 import '../../services/listening_tracker.dart';
@@ -49,534 +51,603 @@ class _RecapScreenState extends State<RecapScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-    
-    if (_recap == null || _recap!.totalTracksPlayed == 0) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.headphones_outlined, size: 80, color: Colors.grey),
-              SizedBox(height: 16),
-              Text(
-                "No listening data yet!", 
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                "Listen to music and come back here.", 
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${_period.name[0].toUpperCase()}${_period.name.substring(1)} Recap'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune),
-            onPressed: () => _showSettings(context),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Hero Card
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context, 
-              MaterialPageRoute(builder: (_) => _StoryView(recap: _recap!))
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
-                ),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Your Recap", 
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                  Text(
-                    _recap!.formattedTime, 
-                    style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.bold, height: 1.1),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _chip(Icons.music_note, '${_recap!.uniqueTracksPlayed} Tracks'),
-                      const SizedBox(width: 12),
-                      _chip(Icons.person, '${_recap!.uniqueArtistsPlayed} Artists'),
-                      const SizedBox(width: 12),
-                      _chip(Icons.local_fire_department, '${_recap!.currentStreak}d Streak'),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  const Center(
-                    child: Text(
-                      "Tap to view Full Story →",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Quick Stats
-          Row(
-            children: [
-              _statCard("Mood", _recap!.mood, Icons.emoji_emotions, Colors.purple),
-              const SizedBox(width: 12),
-              _statCard("Discovered", "${_recap!.newArtistsDiscovered} new", Icons.explore, Colors.teal),
-            ],
-          ),
-
-          if (_recap!.changePercent != null) ...[
-            const SizedBox(height: 12),
-            _statCard(
-              "vs Last Period",
-              "${_recap!.changePercent! > 0 ? '+' : ''}${_recap!.changePercent!.toStringAsFixed(0)}%",
-              _recap!.changePercent! > 0 ? Icons.trending_up : Icons.trending_down,
-              _recap!.changePercent! > 0 ? Colors.green : Colors.red,
-            ),
-          ],
-
-          const SizedBox(height: 24),
-
-          // Top Tracks
-          Text('Top Tracks', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          ..._recap!.topTracks.take(5).map((t) => ListTile(
-            leading: Text(
-              '#${_recap!.topTracks.indexOf(t) + 1}',
-              style: TextStyle(
-                color: _recap!.topTracks.indexOf(t) < 3 ? theme.colorScheme.primary : Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            title: Text(t.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-            subtitle: Text('${t.playCount} plays • ${t.percentage?.toStringAsFixed(1)}%'),
-            trailing: const Icon(Icons.play_arrow, color: Colors.grey),
-          )),
-
-          const SizedBox(height: 24),
-
-          // Top Artists
-          Text('Top Artists', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 120,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _recap!.topArtists.length.clamp(0, 8),
-              itemBuilder: (context, i) {
-                final a = _recap!.topArtists[i];
-                return Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 35,
-                        backgroundColor: Colors.grey[800],
-                        backgroundImage: a.imageUrl != null ? NetworkImage(a.imageUrl!) : null,
-                        child: a.imageUrl == null ? const Icon(Icons.person) : null,
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: 80,
-                        child: Text(
-                          a.name,
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Top Genres
-          Text('Top Genres', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _recap!.topGenres.map((g) => Chip(
-              backgroundColor: Color(g.color).withOpacity(0.2),
-              label: Text('${g.name} (${g.percentage.toStringAsFixed(0)}%)'),
-              labelStyle: TextStyle(color: Color(g.color)),
-              side: BorderSide.none,
-            )).toList(),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Heatmap
-          Text('Activity Heatmap', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          _Heatmap(daily: _recap!.dailyActivity, color: theme.colorScheme.primary),
-
-          const SizedBox(height: 24),
-
-          // Hourly Chart
-          Text('When You Listen', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          _HourlyChart(hourly: _recap!.hourlyActivity, color: theme.colorScheme.primary),
-
-          const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
-
-  Widget _chip(IconData i, String t) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white24,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(i, color: Colors.white, size: 16),
-          const SizedBox(width: 6),
-          Text(t, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-        ],
-      ),
-    );
-  }
-
-  Widget _statCard(String t, String v, IconData i, Color c) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: c.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: c.withOpacity(0.3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(i, color: c),
-            const SizedBox(height: 8),
-            Text(v, style: TextStyle(color: c, fontWeight: FontWeight.bold, fontSize: 16)),
-            Text(t, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showSettings(BuildContext context) {
+  void _showSettings() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.grey[900],
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Padding(
               padding: EdgeInsets.all(16),
-              child: Text(
-                "Recap Settings",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+              child: Text("Select Period", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  ChoiceChip(
-                    label: const Text('Weekly'),
-                    selected: _period == RecapPeriod.weekly,
-                    onSelected: (_) {
-                      setState(() => _period = RecapPeriod.weekly);
-                      Navigator.pop(context);
-                      _load();
-                    },
-                  ),
-                  ChoiceChip(
-                    label: const Text('Monthly'),
-                    selected: _period == RecapPeriod.monthly,
-                    onSelected: (_) {
-                      setState(() => _period = RecapPeriod.monthly);
-                      Navigator.pop(context);
-                      _load();
-                    },
-                  ),
-                  ChoiceChip(
-                    label: const Text('Yearly'),
-                    selected: _period == RecapPeriod.yearly,
-                    onSelected: (_) {
-                      setState(() => _period = RecapPeriod.yearly);
-                      Navigator.pop(context);
-                      _load();
-                    },
-                  ),
+                  ChoiceChip(label: const Text('Weekly', style: TextStyle(color: Colors.white)), selected: _period == RecapPeriod.weekly, selectedColor: Colors.purple, onSelected: (_) { setState(() => _period = RecapPeriod.weekly); Navigator.pop(context); _load(); }),
+                  ChoiceChip(label: const Text('Monthly', style: TextStyle(color: Colors.white)), selected: _period == RecapPeriod.monthly, selectedColor: Colors.purple, onSelected: (_) { setState(() => _period = RecapPeriod.monthly); Navigator.pop(context); _load(); }),
+                  ChoiceChip(label: const Text('Yearly', style: TextStyle(color: Colors.white)), selected: _period == RecapPeriod.yearly, selectedColor: Colors.purple, onSelected: (_) { setState(() => _period = RecapPeriod.yearly); Navigator.pop(context); _load(); }),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.delete_forever, color: Colors.red),
-              title: const Text("Clear Recap Data", style: TextStyle(color: Colors.red)),
-              onTap: () {
-                ListeningTracker().clearData();
-                Navigator.pop(context);
-                _load();
-              },
-            ),
           ],
         ),
       ),
     );
   }
-}
-
-class _StoryView extends StatelessWidget {
-  final RecapData recap;
-
-  const _StoryView({required this.recap});
 
   @override
   Widget build(BuildContext context) {
-    final slides = [
-      _Slide(
-        colors: const [Colors.purple, Colors.deepPurple],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("🎵", style: TextStyle(fontSize: 60)),
-            const SizedBox(height: 16),
-            Text(
-              "${recap.periodLabel} Recap",
-              style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
-            ),
-            Text(recap.dateRange, style: const TextStyle(color: Colors.white70)),
-          ],
-        ),
-      ),
-      _Slide(
-        colors: const [Colors.blue, Colors.indigo],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("You listened to", style: TextStyle(color: Colors.white70)),
-            Text(
-              recap.hoursListened.toStringAsFixed(1),
-              style: const TextStyle(color: Colors.white, fontSize: 80, fontWeight: FontWeight.bold, height: 1),
-            ),
-            const Text("hours of music", style: TextStyle(color: Colors.white)),
-          ],
-        ),
-      ),
-      _Slide(
-        colors: const [Colors.teal, Colors.green],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("Top Artist", style: TextStyle(color: Colors.white70, fontSize: 20)),
-            const SizedBox(height: 16),
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: Colors.white24,
-              backgroundImage: recap.topArtists.isNotEmpty && recap.topArtists.first.imageUrl != null
-                  ? NetworkImage(recap.topArtists.first.imageUrl!)
-                  : null,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              recap.topArtists.isNotEmpty ? recap.topArtists.first.name : "N/A",
-              style: const TextStyle(
-                color: Colors.white, 
-                fontSize: 24, 
-                fontWeight: FontWeight.bold
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-      _Slide(
-        colors: const [Colors.orange, Colors.red],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("🔥 Current Streak", style: TextStyle(color: Colors.white70, fontSize: 20)),
-            Text(
-              "${recap.currentStreak} Days",
-              style: const TextStyle(color: Colors.white, fontSize: 60, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              "Longest: ${recap.longestStreak} days",
-              style: const TextStyle(color: Colors.white70),
-            ),
-          ],
-        ),
-      ),
-      _Slide(
-        colors: const [Colors.pink, Colors.purple],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("Your Vibe", style: TextStyle(color: Colors.white70, fontSize: 20)),
-            const SizedBox(height: 16),
-            Text(
-              recap.mood,
-              style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
-      _Slide(
-        colors: const [Colors.indigo, Colors.blue],
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("Discovery", style: TextStyle(color: Colors.white70, fontSize: 20)),
-            Text(
-              "${recap.newArtistsDiscovered}",
-              style: const TextStyle(color: Colors.white, fontSize: 60, fontWeight: FontWeight.bold),
-            ),
-            const Text("New Artists Found", style: TextStyle(color: Colors.white)),
-          ],
-        ),
-      ),
-    ];
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
     
-    // Fixed: Changed PageView.builder to PageView
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: PageView(
-        scrollDirection: Axis.vertical,
-        children: slides,
-      ),
+    if (_recap == null || _recap!.totalTracksPlayed == 0) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.graphic_eq, size: 80, color: Colors.white54),
+              SizedBox(height: 16),
+              Text("No listening data yet!", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text("Listen to music and come back here.", style: TextStyle(color: Colors.white54)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return _CinematicStoryView(
+      recap: _recap!, 
+      onClose: () => Navigator.pop(context), 
+      onChangePeriod: _showSettings
     );
   }
 }
 
-class _Slide extends StatelessWidget {
-  final List<Color> colors;
-  final Widget child;
+// ── CINEMATIC STORY VIEW ──────────────────────────────────────────────────
+class _CinematicStoryView extends StatefulWidget {
+  final RecapData recap;
+  final VoidCallback onClose;
+  final VoidCallback onChangePeriod;
 
-  const _Slide({required this.colors, required this.child});
+  const _CinematicStoryView({required this.recap, required this.onClose, required this.onChangePeriod});
+
+  @override
+  State<_CinematicStoryView> createState() => _CinematicStoryViewState();
+}
+
+class _CinematicStoryViewState extends State<_CinematicStoryView> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  List<Widget> _buildSlides() {
+    final r = widget.recap;
+    return [
+      _SlideIntro(recap: r),
+      _SlideTimeListened(recap: r),
+      _SlideTopArtist(recap: r),
+      _SlideTopTrack(recap: r),
+      _SlidePersonality(recap: r),
+      _SlideAudioAffinity(recap: r),
+      _SlideTopGenres(recap: r),
+      _SlideOutro(recap: r),
+    ];
+  }
+
+  void _goToNext() {
+    if (_currentPage < _buildSlides().length - 1) {
+      _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOutCubic);
+    }
+  }
+
+  void _goToPrevious() {
+    if (_currentPage > 0) {
+      _pageController.previousPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOutCubic);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final slides = _buildSlides();
+    
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Dynamic Blurred Background
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 800),
+            child: _DynamicBackground(
+              key: ValueKey(_currentPage),
+              imageUrl: _getBackgroundImage(_currentPage),
+              fallbackColors: widget.recap.auraColors,
+            ),
+          ),
+          
+          // Foreground Content (Tap Zones + PageView)
+          Row(
+            children: [
+              // Left Tap Zone (Go Back)
+              Expanded(
+                flex: 1,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _goToPrevious,
+                ),
+              ),
+              // Middle Tap Zone (Ignore to allow scrolling)
+              Expanded(
+                flex: 1,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {},
+                ),
+              ),
+              // Right Tap Zone (Go Forward)
+              Expanded(
+                flex: 1,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _goToNext,
+                ),
+              ),
+            ],
+          ),
+
+          // PageView for swiping
+          PageView(
+            controller: _pageController,
+            scrollDirection: Axis.vertical,
+            onPageChanged: (i) => setState(() => _currentPage = i),
+            children: slides,
+          ),
+
+          // Top UI (Progress Bars & Buttons)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 10,
+            right: 10,
+            child: Row(
+              children: List.generate(slides.length, (i) {
+                return Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: AnimatedAlign(
+                      duration: const Duration(milliseconds: 300),
+                      alignment: Alignment.centerLeft,
+                      widthFactor: i <= _currentPage ? 1.0 : 0.0,
+                      child: Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(2))),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 20,
+            right: 15,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.tune, color: Colors.white),
+                  onPressed: widget.onChangePeriod,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: widget.onClose,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _getBackgroundImage(int page) {
+    if (page == 2 && widget.recap.topArtists.isNotEmpty) return widget.recap.topArtists.first.imageUrl;
+    if (page == 3 && widget.recap.topTracks.isNotEmpty) return widget.recap.topTracks.first.imageUrl;
+    return null;
+  }
+}
+
+// ── DYNAMIC BLURRED BACKGROUND ────────────────────────────────────────────
+class _DynamicBackground extends StatelessWidget {
+  final String? imageUrl;
+  final List<int> fallbackColors;
+
+  const _DynamicBackground({super.key, this.imageUrl, required this.fallbackColors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: imageUrl != null
+              ? Image.network(imageUrl!, fit: BoxFit.cover, errorBuilder: (c, e, s) => _buildGradient())
+              : _buildGradient(),
+        ),
+        // Heavy Blur Layer
+        Positioned.fill(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 60.0, sigmaY: 60.0),
+            child: Container(
+              color: Colors.black.withOpacity(0.6),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGradient() {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(fallbackColors[0]),
+            Color(fallbackColors.length > 1 ? fallbackColors[1] : fallbackColors[0]),
+            Colors.black,
+          ],
         ),
       ),
+    );
+  }
+}
+
+// ── SLIDE WIDGETS & ANIMATIONS ────────────────────────────────────────────
+abstract class _BaseSlide extends StatelessWidget {
+  final RecapData recap;
+  const _BaseSlide({required this.recap});
+
+  Widget buildSlide(BuildContext context, Widget child) {
+    return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: child,
+        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 50.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Spacer(),
+            // Staggered Spring Animation Wrapper
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.easeOutBack,
+              builder: (context, value, c) {
+                return Opacity(
+                  opacity: value.clamp(0.0, 1.0),
+                  child: Transform.translate(
+                    offset: Offset(0, 50 * (1 - value)),
+                    child: c,
+                  ),
+                );
+              },
+              child: child,
+            ),
+            const Spacer(),
+            const Text("Tap sides to navigate", style: TextStyle(color: Colors.white24, fontSize: 10)),
+          ],
+        ),
       ),
     );
   }
-}
 
-class _Heatmap extends StatelessWidget {
-  final List<DailyStat> daily;
-  final Color color;
-
-  const _Heatmap({required this.daily, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    if (daily.isEmpty) return const SizedBox();
-
-    final max = daily.map((d) => d.listeningTimeMs).reduce((a, b) => a > b ? a : b);
-
-    return Wrap(
-      spacing: 3,
-      runSpacing: 3,
-      children: daily.map((d) {
-        final op = max > 0 ? (d.listeningTimeMs / max) : 0.0;
-        return Tooltip(
-          message:
-              "${d.date.day}/${d.date.month}\n${d.listeningTimeMs ~/ 60000} min",
-          child: Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color: d.listeningTimeMs > 0
-                  ? color.withOpacity(0.2 + (op * 0.8))
-                  : Colors.grey.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(3),
-            ),
+  Widget glassCard({required Widget child}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
+            borderRadius: BorderRadius.circular(20),
           ),
-        );
-      }).toList(),
+          child: child,
+        ),
+      ),
     );
   }
 }
 
-class _HourlyChart extends StatelessWidget {
-  final List<HourlyStat> hourly;
-  final Color color;
-
-  const _HourlyChart({required this.hourly, required this.color});
-
+class _SlideIntro extends _BaseSlide {
+  const _SlideIntro({required super.recap});
   @override
   Widget build(BuildContext context) {
-    if (hourly.isEmpty) return const SizedBox();
+    return buildSlide(context, Column(
+      children: [
+        const Text("🎵", style: TextStyle(fontSize: 80)),
+        const SizedBox(height: 24),
+        ShaderMask(
+          shaderCallback: (bounds) => LinearGradient(colors: [Color(recap.auraColors[0]), Colors.white]).createShader(bounds),
+          child: Text(
+            "${recap.periodLabel} Recap", 
+            style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.w900, height: 1.1),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(recap.dateRange, style: const TextStyle(color: Colors.white70, fontSize: 18)),
+      ],
+    ));
+  }
+}
 
-    final max = hourly.map((h) => h.listeningTimeMs).reduce((a, b) => a > b ? a : b);
-    final now = DateTime.now().hour;
+class _SlideTimeListened extends _BaseSlide {
+  const _SlideTimeListened({required super.recap});
+  @override
+  Widget build(BuildContext context) {
+    return buildSlide(context, Column(
+      children: [
+        const Text("You listened for", style: TextStyle(color: Colors.white70, fontSize: 20)),
+        const SizedBox(height: 16),
+        ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(colors: [Colors.purple, Colors.blue]).createShader(bounds),
+          child: Text(
+            recap.hoursListened.toStringAsFixed(1),
+            style: const TextStyle(color: Colors.white, fontSize: 100, fontWeight: FontWeight.w900, height: 1),
+          ),
+        ),
+        const Text("hours", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w300)),
+        const SizedBox(height: 32),
+        glassCard(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _pill(Icons.music_note, "${recap.uniqueTracksPlayed} Tracks"),
+              const SizedBox(width: 16),
+              _pill(Icons.person, "${recap.uniqueArtistsPlayed} Artists"),
+            ],
+          )
+        )
+      ],
+    ));
+  }
 
-    return SizedBox(
-      height: 100,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: hourly.map((h) {
-          final ht = max > 0 ? (h.listeningTimeMs / max * 100) : 0.0;
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Container(
-                height: ht.clamp(2.0, 100.0),
-                decoration: BoxDecoration(
-                  color: h.hour == now ? Colors.red : color.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+  Widget _pill(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white, size: 18),
+        const SizedBox(width: 8),
+        Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ],
     );
   }
+}
+
+class _SlideTopArtist extends _BaseSlide {
+  const _SlideTopArtist({required super.recap});
+  @override
+  Widget build(BuildContext context) {
+    final artist = recap.topArtists.isNotEmpty ? recap.topArtists.first : null;
+    return buildSlide(context, Column(
+      children: [
+        const Text("Your Top Artist", style: TextStyle(color: Colors.white70, fontSize: 20)),
+        const SizedBox(height: 24),
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [BoxShadow(color: Color(recap.auraColors[0]).withOpacity(0.5), blurRadius: 30, spreadRadius: 5)],
+          ),
+          child: CircleAvatar(
+            radius: 90,
+            backgroundColor: Colors.white24,
+            backgroundImage: artist?.imageUrl != null ? NetworkImage(artist!.imageUrl!) : null,
+            child: artist?.imageUrl == null ? const Icon(Icons.person, size: 90, color: Colors.white) : null,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(artist?.name ?? "Unknown", style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+      ],
+    ));
+  }
+}
+
+class _SlideTopTrack extends _BaseSlide {
+  const _SlideTopTrack({required super.recap});
+  @override
+  Widget build(BuildContext context) {
+    final track = recap.topTracks.isNotEmpty ? recap.topTracks.first : null;
+    return buildSlide(context, Column(
+      children: [
+        const Text("Your Top Track", style: TextStyle(color: Colors.white70, fontSize: 20)),
+        const SizedBox(height: 24),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: track?.imageUrl != null 
+              ? Image.network(track!.imageUrl!, width: 200, height: 200, fit: BoxFit.cover) 
+              : Container(width: 200, height: 200, color: Colors.white24, child: const Icon(Icons.music_note, size: 80, color: Colors.white)),
+        ),
+        const SizedBox(height: 24),
+        Text(track?.name ?? "Unknown", style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        const SizedBox(height: 8),
+        Text("${track?.playCount ?? 0} Plays", style: const TextStyle(color: Colors.white70, fontSize: 16)),
+      ],
+    ));
+  }
+}
+
+class _SlidePersonality extends _BaseSlide {
+  const _SlidePersonality({required super.recap});
+  @override
+  Widget build(BuildContext context) {
+    return buildSlide(context, Column(
+      children: [
+        const Text("Your Listening Personality", style: TextStyle(color: Colors.white70, fontSize: 20), textAlign: TextAlign.center),
+        const SizedBox(height: 32),
+        ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(colors: [Colors.orange, Colors.red]).createShader(bounds),
+          child: Text(
+            recap.personalityType,
+            style: const TextStyle(color: Colors.white, fontSize: 42, fontWeight: FontWeight.w900),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 24),
+        glassCard(
+          child: Text(recap.personalityDescription, style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5), textAlign: TextAlign.center),
+        )
+      ],
+    ));
+  }
+}
+
+class _SlideAudioAffinity extends _BaseSlide {
+  const _SlideAudioAffinity({required super.recap});
+  @override
+  Widget build(BuildContext context) {
+    return buildSlide(context, Column(
+      children: [
+        const Text("Your Audio Aura", style: TextStyle(color: Colors.white70, fontSize: 20)),
+        const SizedBox(height: 24),
+        CustomPaint(
+          size: const Size(300, 300),
+          painter: RadarChartPainter(recap.audioFeatures, recap.auraColors),
+        ),
+        const SizedBox(height: 16),
+        const Text("Based on your genre affinities", style: TextStyle(color: Colors.white54, fontSize: 12)),
+      ],
+    ));
+  }
+}
+
+class _SlideTopGenres extends _BaseSlide {
+  const _SlideTopGenres({required super.recap});
+  @override
+  Widget build(BuildContext context) {
+    return buildSlide(context, Column(
+      children: [
+        const Text("Top Genres", style: TextStyle(color: Colors.white70, fontSize: 20)),
+        const SizedBox(height: 24),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          alignment: WrapAlignment.center,
+          children: recap.topGenres.map((g) => Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: Color(g.color).withOpacity(0.3),
+              border: Border.all(color: Color(g.color), width: 1.5),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(g.name, style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          )).toList(),
+        )
+      ],
+    ));
+  }
+}
+
+class _SlideOutro extends _BaseSlide {
+  const _SlideOutro({required super.recap});
+  @override
+  Widget build(BuildContext context) {
+    return buildSlide(context, Column(
+      children: [
+        const Text("🔥 Longest Streak", style: TextStyle(color: Colors.white70, fontSize: 20)),
+        const SizedBox(height: 16),
+        Text("${recap.longestStreak} Days", style: const TextStyle(color: Colors.white, fontSize: 60, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 32),
+        const Text("Thanks for using Bloomee", style: TextStyle(color: Colors.white70, fontSize: 16)),
+        const SizedBox(height: 8),
+        const Text("Tap the X to close", style: TextStyle(color: Colors.white54, fontSize: 12)),
+      ],
+    ));
+  }
+}
+
+// ── CUSTOM GLOWING RADAR CHART PAINTER ────────────────────────────────────
+class RadarChartPainter extends CustomPainter {
+  final AudioFeatures features;
+  final List<int> colors;
+
+  RadarChartPainter(this.features, this.colors);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 * 0.8;
+    
+    final bgPaint = Paint()
+      ..color = Colors.white.withOpacity(0.15)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    
+    final dataPaint = Paint()
+      ..shader = LinearGradient(colors: [Color(colors[0]), Color(colors[1])]).createShader(Rect.fromCircle(center: center, radius: radius))
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10); // Glow effect
+
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+
+    const labels = ["Energy", "Dance", "Mood", "Acoustic"];
+    final values = [features.energy, features.danceability, features.valence, features.acousticness];
+    final angles = List.generate(4, (i) => (i * 90 - 90) * (pi / 180));
+
+    for (var i = 0; i < 4; i++) {
+      final p1 = center + Offset(radius * cos(angles[i]), radius * sin(angles[i]));
+      canvas.drawLine(center, p1, bgPaint);
+    }
+    canvas.drawPath(_createPolygonPath(center, radius, angles), bgPaint);
+
+    final dataPoints = List.generate(4, (i) => center + Offset(radius * values[i] * cos(angles[i]), radius * values[i] * sin(angles[i])));
+    final dataPath = Path()..addPolygon(dataPoints, true);
+    
+    canvas.drawPath(dataPath, dataPaint); // Draw glow
+    canvas.drawPath(dataPath, borderPaint); // Draw solid border over glow
+
+    final textStyle = const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold);
+    for (var i = 0; i < 4; i++) {
+      final p = center + Offset((radius + 20) * cos(angles[i]), (radius + 20) * sin(angles[i]));
+      final tp = TextPainter(text: TextSpan(text: labels[i], style: textStyle), textDirection: TextDirection.ltr)..layout();
+      tp.paint(canvas, p - Offset(tp.width / 2, tp.height / 2));
+    }
+  }
+
+  Path _createPolygonPath(Offset center, double radius, List<double> angles) {
+    final path = Path();
+    for (var i = 0; i < angles.length; i++) {
+      final p = center + Offset(radius * cos(angles[i]), radius * sin(angles[i]));
+      if (i == 0) path.moveTo(p.dx, p.dy); else path.lineTo(p.dx, p.dy);
+    }
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
