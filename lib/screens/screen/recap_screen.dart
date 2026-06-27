@@ -111,7 +111,10 @@ class _RecapScreenState extends State<RecapScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Your Recap", style: TextStyle(color: Colors.white70, fontSize: 16),
+                  const Text(
+                    "Your Recap", 
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
                   Text(
                     _recap!.formattedTime, 
                     style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.bold, height: 1.1),
@@ -180,7 +183,7 @@ class _RecapScreenState extends State<RecapScreen> {
           const SizedBox(height: 24),
 
           // Top Artists
-          Text('Top Artists', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text('Top Artists', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           SizedBox(
             height: 120,
@@ -220,7 +223,7 @@ class _RecapScreenState extends State<RecapScreen> {
           const SizedBox(height: 24),
 
           // Top Genres
-          Text('Top Genres', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text('Top Genres', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -228,7 +231,7 @@ class _RecapScreenState extends State<RecapScreen> {
             children: _recap!.topGenres.map((g) => Chip(
               backgroundColor: Color(g.color).withOpacity(0.2),
               label: Text('${g.name} (${g.percentage.toStringAsFixed(0)}%)'),
-              style: TextStyle(color: Color(g.color)),
+              labelStyle: TextStyle(color: Color(g.color)),
               side: BorderSide.none,
             )).toList(),
           ),
@@ -236,14 +239,14 @@ class _RecapScreenState extends State<RecapScreen> {
           const SizedBox(height: 24),
 
           // Heatmap
-          Text('Activity Heatmap', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text('Activity Heatmap', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _Heatmap(daily: _recap!.dailyActivity, color: theme.colorScheme.primary),
 
           const SizedBox(height: 24),
 
           // Hourly Chart
-          Text('When You Listen', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text('When You Listen', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _HourlyChart(hourly: _recap!.hourlyActivity, color: theme.colorScheme.primary),
 
@@ -376,9 +379,9 @@ class _StoryView extends StatelessWidget {
             SizedBox(height: 16),
             Text(
               "${recap.periodLabel} Recap",
-              style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
             ),
-            Text(recap.dateRange, style: const TextStyle(color: Colors.white70)),
+            Text(recap.dateRange, style: TextStyle(color: Colors.white70)),
           ],
         ),
       ),
@@ -401,7 +404,7 @@ class _StoryView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Top Artist", style: TextStyle(color: Colors.white70, fontSize: 20),
+            const Text("Top Artist", style: TextStyle(color: Colors.white70, fontSize: 20)),
             const SizedBox(height: 16),
             CircleAvatar(
               radius: 60,
@@ -428,7 +431,7 @@ class _StoryView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("🔥 Current Streak", style: TextStyle(color: Colors.white70, fontSize: 20),
+            const Text("🔥 Current Streak", style: TextStyle(color: Colors.white70, fontSize: 20)),
             Text(
               "${recap.currentStreak} Days",
               style: const TextStyle(color: Colors.white, fontSize: 60, fontWeight: FontWeight.bold),
@@ -445,7 +448,7 @@ class _StoryView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Your Vibe", style: TextStyle(color: Colors.white70, fontSize: 20),
+            const Text("Your Vibe", style: TextStyle(color: Colors.white70, fontSize: 20)),
             const SizedBox(height: 16),
             Text(
               recap.mood,
@@ -459,7 +462,7 @@ class _StoryView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Discovery", style: TextStyle(color: Colors.white70, fontSize: 20),
+            const Text("Discovery", style: TextStyle(color: Colors.white70, fontSize: 20)),
             Text(
               "${recap.newArtistsDiscovered}",
               style: const TextStyle(color: Colors.white, fontSize: 60, fontWeight: FontWeight.bold),
@@ -528,7 +531,7 @@ class _Heatmap extends StatelessWidget {
             height: 14,
             decoration: BoxDecoration(
               color: d.listeningTimeMs > 0
-                  ? color.withOpacity(0.2 + (op * 0.8)
+                  ? color.withOpacity(0.2 + (op * 0.8))
                   : Colors.grey.withOpacity(0.1),
               borderRadius: BorderRadius.circular(3),
             ),
